@@ -364,9 +364,9 @@ tr:last-child td { border-bottom: none; }
     <div class="setup-notice" id="setup-notice">
       <strong>Backend setup required for multi-device data collection.</strong><br>
       Without a backend, only registrations submitted on <em>this device/browser</em> appear below.
-      To collect all entries across all drivers, follow the
-      <a href="SETUP.md" style="color:var(--accent)">Power Automate setup guide</a>
-      and paste your flow URL as <code>POWER_AUTOMATE_URL</code> in this file.
+      To collect all entries across all drivers, sign up free at
+      <a href="https://formspree.io" target="_blank" style="color:var(--accent)">formspree.io</a>,
+      create a form, and paste the endpoint URL as <code>FORMSPREE_URL</code> in this file.
     </div>
 
     <div class="admin-table-wrap">
@@ -377,9 +377,9 @@ tr:last-child td { border-bottom: none; }
 </div>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-// Paste your Power Automate HTTP trigger URL here after setup.
-// See SETUP.md for instructions. Leave blank to use local-only mode.
-const POWER_AUTOMATE_URL = '';
+// Paste your Formspree endpoint URL here (https://formspree.io/f/xxxxxxxx).
+// Sign up free at formspree.io — leave blank to use local-only mode.
+const FORMSPREE_URL = '';
 
 const STORE_KEY    = 'opmo-registrations';
 const SEASON_KEY   = 'opmo-season';
@@ -472,11 +472,15 @@ function saveEntryLocal(entry) {
   localStorage.setItem(STORE_KEY, JSON.stringify(entries));
 }
 
-// ── Submit to Power Automate → Excel ─────────────────────────────────────────
-async function submitToExcel(entry) {
-  if (!POWER_AUTOMATE_URL) return;
-  const params = new URLSearchParams(entry);
-  await fetch(POWER_AUTOMATE_URL, { method: 'POST', mode: 'no-cors', body: params });
+// ── Submit to Formspree ───────────────────────────────────────────────────────
+async function submitToFormspree(entry) {
+  if (!FORMSPREE_URL) return;
+  const res = await fetch(FORMSPREE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(entry),
+  });
+  if (!res.ok) throw new Error('Formspree returned ' + res.status);
 }
 
 // ── Excel generation ──────────────────────────────────────────────────────────
@@ -517,9 +521,9 @@ document.getElementById('signup-form').addEventListener('submit', async e => {
   };
 
   try {
-    await submitToExcel(entry);
+    await submitToFormspree(entry);
   } catch(err) {
-    console.warn('Power Automate submission failed:', err);
+    console.warn('Formspree submission failed:', err);
     document.getElementById('submit-error').classList.add('show');
   }
 
@@ -589,7 +593,7 @@ function renderAdminTable() {
   const wrap = document.getElementById('admin-table-body');
 
   const notice = document.getElementById('setup-notice');
-  notice.style.display = POWER_AUTOMATE_URL ? 'none' : '';
+  notice.style.display = FORMSPREE_URL ? 'none' : '';
 
   if (!entries.length) {
     wrap.innerHTML = '<div class="empty-state">No registrations recorded on this device yet.</div>';
