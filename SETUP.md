@@ -21,22 +21,16 @@ Every registration from any driver on any device flows automatically into one Go
 
 ```javascript
 function doPost(e) {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getActiveSheet();
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getActiveSheet();
 
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow([
-      'Season','First Name','Last Name','Driver ID',
-      'Car Number','Driver Class','Car Class','Car','Submitted'
-    ]);
-    sheet.getRange(1,1,1,9)
-      .setFontWeight('bold')
-      .setBackground('#c4a87a')
-      .setFontColor('#0d1117');
+    sheet.appendRow(['Season','First Name','Last Name','Driver ID','Car Number','Driver Class','Car Class','Car','Submitted']);
+    sheet.getRange(1,1,1,9).setFontWeight('bold').setBackground('#c4a87a').setFontColor('#0d1117');
     sheet.setFrozenRows(1);
   }
 
-  const d = e.parameter;
+  var d = e.parameter;
   sheet.appendRow([
     d.season      || '',
     d.firstName   || '',
@@ -46,11 +40,33 @@ function doPost(e) {
     d.driverClass || '',
     d.carClass    || '',
     d.car         || '',
-    new Date().toLocaleString('en-US'),
+    new Date().toLocaleString('en-US')
   ]);
 
   return ContentService
     .createTextOutput(JSON.stringify({ status: 'ok' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getActiveSheet();
+  var lastRow = sheet.getLastRow();
+  var carNums = [];
+  var season  = e && e.parameter && e.parameter.season ? e.parameter.season : null;
+
+  if (lastRow > 1) {
+    var data = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    data.forEach(function(row) {
+      if (!season || String(row[0]).trim() === season) {
+        var num = String(row[4]).trim();
+        if (num) carNums.push(num);
+      }
+    });
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify({ carNums: carNums }))
     .setMimeType(ContentService.MimeType.JSON);
 }
 ```

@@ -314,22 +314,22 @@ tr:last-child td { border-bottom: none; }
           <label class="class-pill" id="pill-ben">
             <input type="radio" name="driver-class" value="Beneficiary">
             <span class="pill-name">Beneficiary</span>
-            <span class="pill-sub">Ben</span>
+            <span class="pill-sub">LMP2</span>
           </label>
           <label class="class-pill" id="pill-proben">
             <input type="radio" name="driver-class" value="Pro-Ben">
             <span class="pill-name">Pro-Ben</span>
-            <span class="pill-sub">Pro Ben</span>
+            <span class="pill-sub">GTP</span>
           </label>
           <label class="class-pill" id="pill-pro">
             <input type="radio" name="driver-class" value="Pro">
             <span class="pill-name">Pro</span>
-            <span class="pill-sub">Pro</span>
+            <span class="pill-sub">GTP</span>
           </label>
           <label class="class-pill" id="pill-open">
             <input type="radio" name="driver-class" value="Open">
             <span class="pill-name">Open</span>
-            <span class="pill-sub">Open</span>
+            <span class="pill-sub">GT3</span>
           </label>
         </div>
         <div class="field-error" id="err-class">Please select a driver class</div>
@@ -458,6 +458,8 @@ const CARS = {
 let selectedClass    = '';
 let selectedCarClass = '';
 let lastEntry        = null;
+let cachedCarNums    = null;
+let carNumTaken      = false;
 
 function getSeason() {
   return localStorage.getItem(SEASON_KEY) || 'Season 13';
@@ -493,14 +495,67 @@ function selectCarClass(cls, el) {
   document.getElementById('err-car').classList.remove('show');
 }
 
+// ── Car number availability check ─────────────────────────────────────────────
+async function fetchCarNums() {
+  if (!APPS_SCRIPT_URL) return [];
+  if (cachedCarNums !== null) return cachedCarNums;
+  try {
+    const r = await fetch(`${APPS_SCRIPT_URL}?season=${encodeURIComponent(getSeason())}`);
+    const data = await r.json();
+    cachedCarNums = (data.carNums || []).map(String);
+    return cachedCarNums;
+  } catch(err) {
+    return [];
+  }
+}
+
+async function checkCarNum() {
+  const input  = document.getElementById('car-num');
+  const errEl  = document.getElementById('err-car-num');
+  const val    = input.value.trim();
+  if (!val) { carNumTaken = false; return; }
+
+  errEl.textContent = 'Checking availability…';
+  errEl.style.color = 'var(--muted)';
+  errEl.classList.add('show');
+  input.classList.remove('invalid');
+
+  const nums = await fetchCarNums();
+
+  if (nums.includes(val)) {
+    carNumTaken = true;
+    input.classList.add('invalid');
+    errEl.textContent = `Car #${val} is already registered — please choose a different number.`;
+    errEl.style.color = '';
+  } else {
+    carNumTaken = false;
+    errEl.classList.remove('show');
+    errEl.style.color = '';
+  }
+}
+
 // ── Validation ────────────────────────────────────────────────────────────────
 function validate() {
   let ok = true;
-  [['first-name','err-first'],['last-name','err-last'],['driver-id','err-driver-id'],['car-num','err-car-num']].forEach(([id,eid]) => {
+  [['first-name','err-first'],['last-name','err-last'],['driver-id','err-driver-id']].forEach(([id,eid]) => {
     const el = document.getElementById(id);
     if (!el.value.trim()) { el.classList.add('invalid'); document.getElementById(eid).classList.add('show'); ok = false; }
     else { el.classList.remove('invalid'); document.getElementById(eid).classList.remove('show'); }
   });
+  const carNumEl  = document.getElementById('car-num');
+  const carNumErr = document.getElementById('err-car-num');
+  if (!carNumEl.value.trim()) {
+    carNumEl.classList.add('invalid');
+    carNumErr.textContent = 'Required';
+    carNumErr.style.color = '';
+    carNumErr.classList.add('show');
+    ok = false;
+  } else if (carNumTaken) {
+    ok = false;
+  } else {
+    carNumEl.classList.remove('invalid');
+    carNumErr.classList.remove('show');
+  }
   if (!selectedClass) { document.getElementById('err-class').classList.add('show'); ok = false; }
   const sel = document.getElementById('car-select');
   if (!sel.value) { sel.classList.add('invalid'); document.getElementById('err-car').classList.add('show'); ok = false; }
@@ -542,6 +597,17 @@ function buildXlsx(rows, filename) {
 document.getElementById('signup-form').addEventListener('submit', async e => {
   e.preventDefault();
   if (!validate()) return;
+
+  // If car number hasn't been checked against Sheets yet, do it now
+  if (APPS_SCRIPT_URL && cachedCarNums === null) {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'CHECKING #…';
+    await checkCarNum();
+    btn.disabled = false;
+    btn.textContent = 'SUBMIT REGISTRATION';
+    if (carNumTaken) return;
+  }
 
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
@@ -707,9 +773,18 @@ function clearAll() {
 document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitPassword(); });
 
 // ── Input live-clear invalid state ───────────────────────────────────────────
-['first-name','last-name','driver-id','car-num'].forEach(id => {
+['first-name','last-name','driver-id'].forEach(id => {
   document.getElementById(id).addEventListener('input', function() { this.classList.remove('invalid'); });
 });
+document.getElementById('car-num').addEventListener('input', function() {
+  this.classList.remove('invalid');
+  carNumTaken = false;
+  cachedCarNums = null;
+  const errEl = document.getElementById('err-car-num');
+  errEl.classList.remove('show');
+  errEl.style.color = '';
+});
+document.getElementById('car-num').addEventListener('blur', checkCarNum);
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 updateSeasonDisplay();
