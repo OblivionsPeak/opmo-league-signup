@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operation eMotorsport League — Driver Registration</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2128;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #7d8590;
+  --accent: #c4a87a;
+  --accent-hover: #b8956a;
+  --accent-dim: rgba(196,168,122,.12);
+  --red: #dc2626;
+  --danger: #f85149;
+  --success: #3fb950;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body {
+  background-color: var(--bg);
+  background-image: linear-gradient(rgba(13,17,23,.78),rgba(13,17,23,.78)), url('Spa-2.jpg');
+  background-size: cover;
+  background-position: center 40%;
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(196,168,122,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(196,168,122,.018) 1px, transparent 1px);
+  background-size: 52px 52px;
+  pointer-events: none;
+  z-index: 0;
+}
+.page-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+}
+
+/* ── Brand ── */
+.brand-header { text-align: center; margin-bottom: 36px; }
+.brand-op { font-size: 11px; font-weight: 800; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; }
+.brand-moto { font-size: 42px; font-weight: 900; letter-spacing: -1.5px; line-height: 1; color: var(--text); }
+.brand-e { font-style: italic; color: var(--red); }
+.brand-league { font-size: 13px; font-weight: 600; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; margin-top: 6px; }
+.brand-season { font-size: 11px; letter-spacing: 2px; color: var(--muted); margin-top: 5px; }
+.brand-tagline { font-size: 11px; letter-spacing: 2px; color: var(--muted); margin-top: 4px; opacity: .6; }
+.brand-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(196,168,122,.4), transparent); margin: 20px auto 0; width: 70%; }
+
+/* ── Card ── */
+.form-card {
+  background: rgba(22,27,34,.88);
+  border: 1px solid rgba(196,168,122,.2);
+  border-radius: 14px;
+  padding: 36px 32px;
+  backdrop-filter: blur(6px);
+}
+.form-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.form-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 28px; line-height: 1.5; }
+
+/* ── Fields ── */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { margin-bottom: 20px; }
+.form-group.full { grid-column: 1 / -1; }
+label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+input, select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color .15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+input:focus, select:focus { border-color: var(--accent); }
+input::placeholder { color: var(--muted); }
+select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237d8590' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+select:disabled { opacity: .5; cursor: default; }
+
+/* ── Class Pills ── */
+.class-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.class-pill {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; padding: 10px 6px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; transition: all .15s; text-align: center;
+}
+.class-pill input[type=radio] { display: none; }
+.class-pill .pill-name { font-size: 12px; font-weight: 700; color: var(--muted); transition: color .15s; }
+.class-pill .pill-sub { font-size: 10px; color: var(--muted); opacity: .6; }
+.class-pill:hover { border-color: var(--accent); }
+.class-pill:hover .pill-name { color: var(--accent); }
+.class-pill.selected { background: var(--accent-dim); border-color: var(--accent); }
+.class-pill.selected .pill-name { color: var(--accent); }
+.class-pill.selected .pill-sub { color: var(--accent); opacity: .9; }
+
+/* ── Car Class Tabs ── */
+.car-class-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.car-tab {
+  flex: 1; padding: 9px 8px; text-align: center;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; font-size: 13px; font-weight: 700; color: var(--muted);
+  transition: all .15s; user-select: none;
+}
+.car-tab:hover { border-color: var(--accent); color: var(--accent); }
+.car-tab.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+/* ── Errors ── */
+.field-error { font-size: 11px; color: var(--danger); margin-top: 4px; display: none; }
+.field-error.show { display: block; }
+input.invalid, select.invalid { border-color: var(--danger) !important; }
+
+/* ── Submit ── */
+.btn-submit {
+  width: 100%; padding: 13px;
+  background: var(--accent); color: #0d1117;
+  border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 800; letter-spacing: .5px;
+  cursor: pointer; transition: background .15s, transform .1s;
+  margin-top: 8px;
+}
+.btn-submit:hover { background: var(--accent-hover); }
+.btn-submit:active { transform: scale(.98); }
+.btn-submit:disabled { opacity: .6; cursor: default; }
+
+/* ── Success ── */
+.success-card { display: none; text-align: center; padding: 40px 10px; }
+.success-card.show { display: block; }
+.success-icon { font-size: 52px; margin-bottom: 16px; }
+.success-title { font-size: 22px; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+.success-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+.btn-secondary {
+  padding: 10px 22px;
+  background: transparent; color: var(--accent);
+  border: 1px solid var(--accent); border-radius: 8px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all .15s; margin: 0 6px;
+}
+.btn-secondary:hover { background: var(--accent-dim); }
+
+/* ── Submission error banner ── */
+.submit-error {
+  display: none;
+  background: rgba(248,81,73,.1);
+  border: 1px solid rgba(248,81,73,.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--danger);
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.submit-error.show { display: block; }
+
+/* ── Admin ── */
+.admin-toggle { text-align: center; margin-top: 28px; }
+.admin-toggle button {
+  background: none; border: none; color: var(--muted);
+  font-size: 11px; cursor: pointer; letter-spacing: .5px;
+  text-decoration: underline; text-underline-offset: 3px; opacity: .45;
+}
+.admin-toggle button:hover { opacity: 1; }
+.admin-panel {
+  display: none;
+  background: rgba(22,27,34,.9);
+  border: 1px solid rgba(196,168,122,.2);
+  border-radius: 14px; padding: 24px; margin-top: 16px;
+  backdrop-filter: blur(6px);
+}
+.admin-panel.show { display: block; }
+.admin-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+.admin-hdr h3 { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+.admin-count { font-size: 12px; color: var(--muted); }
+.admin-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-export {
+  padding: 8px 14px; background: #216c3c; color: #fff;
+  border: none; border-radius: 6px; font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: background .15s;
+}
+.btn-export:hover { background: #2ea04b; }
+.btn-season {
+  padding: 8px 14px; background: transparent; color: var(--accent);
+  border: 1px solid rgba(196,168,122,.3); border-radius: 6px;
+  font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s;
+}
+.btn-season:hover { background: var(--accent-dim); }
+.btn-clear { padding: 8px 14px; background: transparent; color: var(--danger); border: 1px solid rgba(248,81,73,.35); border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s; }
+.btn-clear:hover { background: rgba(248,81,73,.1); }
+.season-input-wrap { display: none; margin-bottom: 14px; }
+.season-input-wrap.show { display: flex; gap: 8px; align-items: center; }
+.season-input-wrap input { max-width: 200px; }
+.season-input-wrap button { padding: 9px 14px; background: var(--accent); color: #0d1117; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.admin-table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 8px 10px; border-bottom: 1px solid rgba(48,54,61,.5); color: var(--text); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+.empty-state { text-align: center; color: var(--muted); padding: 28px; font-size: 13px; }
+
+/* ── Setup notice ── */
+.setup-notice {
+  background: rgba(196,168,122,.07);
+  border: 1px solid rgba(196,168,122,.2);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 22px;
+}
+.setup-notice strong { color: var(--accent); }
+.setup-notice code { background: var(--surface2); padding: 1px 5px; border-radius: 4px; font-size: 11px; color: var(--text); }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- Brand -->
+  <div class="brand-header">
+    <div class="brand-op">Operation</div>
+    <div class="brand-moto"><span class="brand-e">e</span>MOTORSPORT</div>
+    <div class="brand-league">League</div>
+    <div class="brand-season" id="season-display">Season Registration</div>
+    <div class="brand-tagline">#OneAtATime</div>
+    <div class="brand-divider"></div>
+  </div>
+
+  <!-- Form Card -->
+  <div class="form-card" id="form-card">
+    <div class="form-title">Driver Registration</div>
+    <div class="form-subtitle">Complete all fields to register for the current Operation eMotorsport League season. Your registration is saved and you will receive an Excel copy instantly.</div>
+
+    <form id="signup-form" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="first-name">First Name</label>
+          <input type="text" id="first-name" placeholder="e.g. James" autocomplete="given-name">
+          <div class="field-error" id="err-first">Required</div>
+        </div>
+        <div class="form-group">
+          <label for="last-name">Last Name</label>
+          <input type="text" id="last-name" placeholder="e.g. Anderson" autocomplete="family-name">
+          <div class="field-error" id="err-last">Required</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="driver-id">iRacing Driver ID</label>
+          <input type="text" id="driver-id" placeholder="e.g. 123456" inputmode="numeric">
+          <div class="field-error" id="err-driver-id">Required</div>
+        </div>
+        <div class="form-group">
+          <label for="car-num">Car Number</label>
+          <input type="text" id="car-num" placeholder="e.g. 10" inputmode="numeric">
+          <div class="field-error" id="err-car-num">Required</div>
+        </div>
+      </div>
+
+      <!-- Driver Class -->
+      <div class="form-group">
+        <label>Driver Class</label>
+        <div class="class-group">
+          <label class="class-pill" id="pill-ben">
+            <input type="radio" name="driver-class" value="Beneficiary">
+            <span class="pill-name">Beneficiary</span>
+            <span class="pill-sub">Ben</span>
+          </label>
+          <label class="class-pill" id="pill-proben">
+            <input type="radio" name="driver-class" value="Pro-Ben">
+            <span class="pill-name">Pro-Ben</span>
+            <span class="pill-sub">Pro Ben</span>
+          </label>
+          <label class="class-pill" id="pill-pro">
+            <input type="radio" name="driver-class" value="Pro">
+            <span class="pill-name">Pro</span>
+            <span class="pill-sub">Pro</span>
+          </label>
+          <label class="class-pill" id="pill-open">
+            <input type="radio" name="driver-class" value="Open">
+            <span class="pill-name">Open</span>
+            <span class="pill-sub">Open</span>
+          </label>
+        </div>
+        <div class="field-error" id="err-class">Please select a driver class</div>
+      </div>
+
+      <!-- Car Class + Car -->
+      <div class="form-group">
+        <label>Car Class &amp; Car</label>
+        <div class="car-class-tabs">
+          <div class="car-tab" id="tab-gtp" onclick="selectCarClass('GTP',this)">GTP</div>
+          <div class="car-tab" id="tab-lmp2" onclick="selectCarClass('LMP2',this)">LMP2</div>
+          <div class="car-tab" id="tab-gt3" onclick="selectCarClass('GT3',this)">GT3</div>
+        </div>
+        <select id="car-select" disabled>
+          <option value="">— Select car class first —</option>
+        </select>
+        <div class="field-error" id="err-car">Please select a car</div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">SUBMIT REGISTRATION</button>
+      <div class="submit-error" id="submit-error">
+        Submission failed. Your registration has been saved locally — please try again or contact the league admin.
+      </div>
+    </form>
+
+    <!-- Success -->
+    <div class="success-card" id="success-card">
+      <div class="success-icon">🏁</div>
+      <div class="success-title">Registration Submitted!</div>
+      <div class="success-sub">
+        Your registration has been recorded for <strong id="success-season"></strong>.<br>
+        An Excel copy of your entry has been downloaded.<br><br>
+        <span style="color:var(--accent)">Welcome to the Operation eMotorsport League.</span>
+      </div>
+      <button class="btn-secondary" onclick="resetForm()">Register Another Driver</button>
+      <button class="btn-secondary" onclick="downloadMine()">Re-download Excel</button>
+    </div>
+  </div>
+
+  <!-- Admin -->
+  <div class="admin-toggle">
+    <button onclick="toggleAdmin()">Admin Panel</button>
+  </div>
+
+  <div class="admin-panel" id="admin-panel">
+    <div class="admin-hdr">
+      <div>
+        <h3>Registered Drivers</h3>
+        <div class="admin-count" id="admin-count">0 entries</div>
+      </div>
+      <div class="admin-actions">
+        <button class="btn-season" onclick="toggleSeasonInput()">Change Season</button>
+        <button class="btn-export" onclick="exportAll()">Export → Excel</button>
+        <button class="btn-clear" onclick="clearAll()">Clear Season Data</button>
+      </div>
+    </div>
+
+    <div class="season-input-wrap" id="season-input-wrap">
+      <input type="text" id="season-name-input" placeholder="e.g. 2027 Season 1">
+      <button onclick="saveSeason()">Save</button>
+    </div>
+
+    <div class="setup-notice" id="setup-notice">
+      <strong>Backend setup required for multi-device data collection.</strong><br>
+      Without a backend, only registrations submitted on <em>this device/browser</em> appear below.
+      To collect all entries across all drivers, follow the
+      <a href="SETUP.md" style="color:var(--accent)">Google Sheets setup guide</a>
+      and paste your Apps Script URL as <code>APPS_SCRIPT_URL</code> in this file.
+    </div>
+
+    <div class="admin-table-wrap">
+      <div id="admin-table-body"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+// Paste your Google Apps Script web app URL here after setup.
+// See SETUP.md for instructions. Leave blank to use local-only mode.
+const APPS_SCRIPT_URL = '';
+
+const STORE_KEY    = 'opmo-registrations';
+const SEASON_KEY   = 'opmo-season';
+
+// ── Cars ──────────────────────────────────────────────────────────────────────
+const CARS = {
+  GTP: [
+    'Acura ARX-06 GTP',
+    'BMW M Hybrid V8',
+    'Cadillac V-Series.R GTP',
+    'Porsche 963 GTP',
+  ],
+  LMP2: [
+    'Dallara P217 LMP2',
+  ],
+  GT3: [
+    'Audi R8 LMS GT3 EVO II',
+    'BMW M4 GT3',
+    'Chevrolet Corvette Z06 GT3.R',
+    'Ferrari 296 GT3',
+    'Ford Mustang GT3',
+    'Lamborghini Huracán GT3 EVO2',
+    'McLaren 720S GT3 EVO',
+    'Mercedes-AMG GT3 EVO',
+    'Porsche 992 GT3 R',
+  ],
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let selectedClass    = '';
+let selectedCarClass = '';
+let lastEntry        = null;
+
+function getSeason() {
+  return localStorage.getItem(SEASON_KEY) || 'Current Season';
+}
+
+function updateSeasonDisplay() {
+  const s = getSeason();
+  document.getElementById('season-display').textContent = s;
+  document.getElementById('success-season').textContent = s;
+}
+
+// ── Driver Class selection ────────────────────────────────────────────────────
+document.querySelectorAll('.class-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.class-pill').forEach(p => p.classList.remove('selected'));
+    pill.classList.add('selected');
+    selectedClass = pill.querySelector('input').value;
+    document.getElementById('err-class').classList.remove('show');
+  });
+});
+
+// ── Car Class selection ───────────────────────────────────────────────────────
+function selectCarClass(cls, el) {
+  document.querySelectorAll('.car-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  selectedCarClass = cls;
+
+  const sel = document.getElementById('car-select');
+  sel.disabled = false;
+  sel.innerHTML = `<option value="">— Select your car —</option>` +
+    CARS[cls].map(c => `<option value="${c}">${c}</option>`).join('');
+  sel.classList.remove('invalid');
+  document.getElementById('err-car').classList.remove('show');
+}
+
+// ── Validation ────────────────────────────────────────────────────────────────
+function validate() {
+  let ok = true;
+  [['first-name','err-first'],['last-name','err-last'],['driver-id','err-driver-id'],['car-num','err-car-num']].forEach(([id,eid]) => {
+    const el = document.getElementById(id);
+    if (!el.value.trim()) { el.classList.add('invalid'); document.getElementById(eid).classList.add('show'); ok = false; }
+    else { el.classList.remove('invalid'); document.getElementById(eid).classList.remove('show'); }
+  });
+  if (!selectedClass) { document.getElementById('err-class').classList.add('show'); ok = false; }
+  const sel = document.getElementById('car-select');
+  if (!sel.value) { sel.classList.add('invalid'); document.getElementById('err-car').classList.add('show'); ok = false; }
+  else { sel.classList.remove('invalid'); document.getElementById('err-car').classList.remove('show'); }
+  return ok;
+}
+
+// ── Local storage helpers ─────────────────────────────────────────────────────
+function getEntries() { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
+function saveEntryLocal(entry) {
+  const entries = getEntries();
+  entries.push(entry);
+  localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+}
+
+// ── Submit to Google Sheets ───────────────────────────────────────────────────
+async function submitToSheets(entry) {
+  if (!APPS_SCRIPT_URL) return;
+  const params = new URLSearchParams(entry);
+  await fetch(APPS_SCRIPT_URL, { method: 'POST', body: params });
+}
+
+// ── Excel generation ──────────────────────────────────────────────────────────
+function buildXlsx(rows, filename) {
+  const headers = ['Season','First Name','Last Name','Driver ID','Car Number','Driver Class','Car Class','Car','Submitted'];
+  const data = [headers, ...rows.map(r => [
+    r.season, r.firstName, r.lastName, r.driverId, r.carNum,
+    r.driverClass, r.carClass, r.car,
+    new Date(r.timestamp).toLocaleString('en-US')
+  ])];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [16,12,12,12,10,14,10,28,18].map(w => ({wch:w}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Registrations');
+  XLSX.writeFile(wb, filename);
+}
+
+// ── Form submit ───────────────────────────────────────────────────────────────
+document.getElementById('signup-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!validate()) return;
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'SUBMITTING…';
+  document.getElementById('submit-error').classList.remove('show');
+
+  const entry = {
+    season:      getSeason(),
+    firstName:   document.getElementById('first-name').value.trim(),
+    lastName:    document.getElementById('last-name').value.trim(),
+    driverId:    document.getElementById('driver-id').value.trim(),
+    carNum:      document.getElementById('car-num').value.trim(),
+    driverClass: selectedClass,
+    carClass:    selectedCarClass,
+    car:         document.getElementById('car-select').value,
+    timestamp:   new Date().toISOString(),
+  };
+
+  try {
+    await submitToSheets(entry);
+  } catch(err) {
+    console.warn('Sheets submission failed:', err);
+    document.getElementById('submit-error').classList.add('show');
+  }
+
+  saveEntryLocal(entry);
+  lastEntry = entry;
+
+  buildXlsx([entry], `OpMo_Registration_${entry.lastName}_${entry.firstName}.xlsx`);
+
+  document.getElementById('signup-form').style.display = 'none';
+  document.getElementById('success-card').classList.add('show');
+  document.getElementById('success-season').textContent = entry.season;
+  renderAdminTable();
+
+  btn.disabled = false;
+  btn.textContent = 'SUBMIT REGISTRATION';
+});
+
+function downloadMine() {
+  if (!lastEntry) return;
+  buildXlsx([lastEntry], `OpMo_Registration_${lastEntry.lastName}_${lastEntry.firstName}.xlsx`);
+}
+
+function resetForm() {
+  document.getElementById('signup-form').reset();
+  document.getElementById('signup-form').style.display = '';
+  document.getElementById('success-card').classList.remove('show');
+  document.querySelectorAll('.class-pill').forEach(p => p.classList.remove('selected'));
+  document.querySelectorAll('.car-tab').forEach(t => t.classList.remove('active'));
+  const sel = document.getElementById('car-select');
+  sel.innerHTML = '<option value="">— Select car class first —</option>';
+  sel.disabled = true;
+  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('show'));
+  document.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+  document.getElementById('submit-error').classList.remove('show');
+  selectedClass = '';
+  selectedCarClass = '';
+}
+
+// ── Admin panel ───────────────────────────────────────────────────────────────
+function toggleAdmin() {
+  const p = document.getElementById('admin-panel');
+  p.classList.toggle('show');
+  if (p.classList.contains('show')) renderAdminTable();
+}
+
+function toggleSeasonInput() {
+  const w = document.getElementById('season-input-wrap');
+  w.classList.toggle('show');
+  if (w.classList.contains('show')) {
+    const inp = document.getElementById('season-name-input');
+    inp.value = getSeason();
+    inp.focus();
+  }
+}
+
+function saveSeason() {
+  const val = document.getElementById('season-name-input').value.trim();
+  if (!val) return;
+  localStorage.setItem(SEASON_KEY, val);
+  updateSeasonDisplay();
+  document.getElementById('season-input-wrap').classList.remove('show');
+}
+
+function renderAdminTable() {
+  const entries = getEntries();
+  document.getElementById('admin-count').textContent = `${entries.length} entr${entries.length===1?'y':'ies'} (this device)`;
+  const wrap = document.getElementById('admin-table-body');
+
+  const notice = document.getElementById('setup-notice');
+  notice.style.display = APPS_SCRIPT_URL ? 'none' : '';
+
+  if (!entries.length) {
+    wrap.innerHTML = '<div class="empty-state">No registrations recorded on this device yet.</div>';
+    return;
+  }
+
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th>#</th><th>Season</th><th>First</th><th>Last</th><th>Driver ID</th>
+      <th>Car #</th><th>Class</th><th>Car Class</th><th>Car</th><th>Submitted</th>
+    </tr></thead>
+    <tbody>${entries.map((r,i)=>`<tr>
+      <td>${i+1}</td><td>${r.season||'—'}</td>
+      <td>${r.firstName}</td><td>${r.lastName}</td>
+      <td>${r.driverId}</td><td>${r.carNum}</td>
+      <td>${r.driverClass}</td><td>${r.carClass}</td><td>${r.car}</td>
+      <td>${new Date(r.timestamp).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function exportAll() {
+  const entries = getEntries();
+  if (!entries.length) { alert('No registrations to export.'); return; }
+  const date = new Date().toISOString().slice(0,10);
+  const season = getSeason().replace(/\s+/g,'_');
+  buildXlsx(entries, `OpMo_Registrations_${season}_${date}.xlsx`);
+}
+
+function clearAll() {
+  if (!confirm(`Clear all local registration data for "${getSeason()}"?\n\nThis only removes data on this device. Google Sheets data (if configured) is unaffected.`)) return;
+  localStorage.removeItem(STORE_KEY);
+  renderAdminTable();
+}
+
+// ── Input live-clear invalid state ───────────────────────────────────────────
+['first-name','last-name','driver-id','car-num'].forEach(id => {
+  document.getElementById(id).addEventListener('input', function() { this.classList.remove('invalid'); });
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+updateSeasonDisplay();
+</script>
+</body>
+</html>
