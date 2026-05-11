@@ -174,6 +174,37 @@ input.invalid, select.invalid { border-color: var(--danger) !important; }
 }
 .submit-error.show { display: block; }
 
+/* ── Password modal ── */
+.pw-modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.7); z-index: 100;
+  align-items: center; justify-content: center;
+}
+.pw-modal-overlay.show { display: flex; }
+.pw-modal {
+  background: #161b22; border: 1px solid rgba(196,168,122,.25);
+  border-radius: 14px; padding: 32px 28px; width: 100%; max-width: 360px;
+  text-align: center;
+}
+.pw-modal h3 { font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+.pw-modal p { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+.pw-modal input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 14px;
+  padding: 10px 14px; outline: none; margin-bottom: 12px;
+  text-align: center; letter-spacing: 2px;
+}
+.pw-modal input:focus { border-color: var(--accent); }
+.pw-modal input.invalid { border-color: var(--danger); }
+.pw-error { font-size: 11px; color: var(--danger); margin-bottom: 12px; display: none; }
+.pw-error.show { display: block; }
+.pw-actions { display: flex; gap: 8px; }
+.pw-actions button { flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; transition: all .15s; }
+.pw-submit { background: var(--accent); color: #0d1117; }
+.pw-submit:hover { background: var(--accent-hover); }
+.pw-cancel { background: transparent; color: var(--muted); border: 1px solid var(--border) !important; }
+.pw-cancel:hover { color: var(--text); }
+
 /* ── Admin ── */
 .admin-toggle { text-align: center; margin-top: 28px; }
 .admin-toggle button {
@@ -373,6 +404,21 @@ tr:last-child td { border-bottom: none; }
   </div>
 
 </div>
+
+<!-- Password modal -->
+<div class="pw-modal-overlay" id="pw-modal-overlay">
+  <div class="pw-modal">
+    <h3>Admin Access</h3>
+    <p>Enter the admin password to continue.</p>
+    <input type="password" id="pw-input" placeholder="••••••••" autocomplete="off">
+    <div class="pw-error" id="pw-error">Incorrect password. Try again.</div>
+    <div class="pw-actions">
+      <button class="pw-cancel" onclick="closePwModal()">Cancel</button>
+      <button class="pw-submit" onclick="submitPassword()">Unlock</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 // Paste your Google Apps Script web app URL here after setup.
@@ -554,11 +600,47 @@ function resetForm() {
   selectedCarClass = '';
 }
 
-// ── Admin panel ───────────────────────────────────────────────────────────────
+// ── Admin password ────────────────────────────────────────────────────────────
+const ADMIN_HASH = '69cdb9b8b6c3ad82b7ee3cabd0d76ac25b5678a83f60c87cafe6db288c0cfdd6';
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
 function toggleAdmin() {
-  const p = document.getElementById('admin-panel');
-  p.classList.toggle('show');
-  if (p.classList.contains('show')) renderAdminTable();
+  if (sessionStorage.getItem('opmo-admin-auth') === '1') {
+    const p = document.getElementById('admin-panel');
+    p.classList.toggle('show');
+    if (p.classList.contains('show')) renderAdminTable();
+  } else {
+    document.getElementById('pw-modal-overlay').classList.add('show');
+    setTimeout(() => document.getElementById('pw-input').focus(), 50);
+  }
+}
+
+function closePwModal() {
+  document.getElementById('pw-modal-overlay').classList.remove('show');
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-error').classList.remove('show');
+  document.getElementById('pw-input').classList.remove('invalid');
+}
+
+async function submitPassword() {
+  const val = document.getElementById('pw-input').value;
+  const hash = await sha256(val);
+  if (hash === ADMIN_HASH) {
+    sessionStorage.setItem('opmo-admin-auth', '1');
+    closePwModal();
+    const p = document.getElementById('admin-panel');
+    p.classList.add('show');
+    renderAdminTable();
+  } else {
+    document.getElementById('pw-input').classList.add('invalid');
+    document.getElementById('pw-error').classList.add('show');
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
 }
 
 function toggleSeasonInput() {
@@ -620,6 +702,9 @@ function clearAll() {
   localStorage.removeItem(STORE_KEY);
   renderAdminTable();
 }
+
+// ── Password input — submit on Enter ─────────────────────────────────────────
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitPassword(); });
 
 // ── Input live-clear invalid state ───────────────────────────────────────────
 ['first-name','last-name','driver-id','car-num'].forEach(id => {
