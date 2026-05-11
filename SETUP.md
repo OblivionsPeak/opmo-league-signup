@@ -1,124 +1,99 @@
-# Power Automate + Excel Setup Guide
+# Google Sheets Backend Setup
 
-Every registration from any driver on any device flows automatically into one Excel file in your OneDrive. Export or open it any time — no extra steps needed.
+Every registration from any driver on any device flows automatically into one Google Sheet. Data persists forever, exports to Excel any time, and costs nothing.
 
-**Requires:** Microsoft 365 (any plan that includes OneDrive and Power Automate)
-
----
-
-## One-time setup (~10 minutes)
-
-### Step 1 — Create the Excel file in OneDrive
-
-1. Open [onedrive.live.com](https://onedrive.live.com) (or OneDrive for Business)
-2. Create a new Excel workbook — name it **OpMo League Registrations**
-3. In cell **A1**, type the following headers across the row:
-
-   | A | B | C | D | E | F | G | H | I |
-   |---|---|---|---|---|---|---|---|---|
-   | Season | First Name | Last Name | Driver ID | Car Number | Driver Class | Car Class | Car | Submitted |
-
-4. Select cells **A1 through I1**, then on the **Insert** tab click **Table**
-   - Check "My table has headers" → OK
-5. Name the table **Registrations**:
-   - Click anywhere in the table → **Table Design** tab → change "Table Name" from `Table1` to `Registrations`
-6. Save the file
+**Requires:** A Google account (Gmail)
 
 ---
 
-### Step 2 — Create the Power Automate flow
+## One-time setup (~5 minutes)
 
-1. Go to [make.powerautomate.com](https://make.powerautomate.com) and sign in
-2. Click **+ Create** → **Instant cloud flow**
-3. Name it **OpMo Registration**, select **When a HTTP request is received** as the trigger → **Create**
+### Step 1 — Create the Google Sheet
 
----
+1. Go to [sheets.google.com](https://sheets.google.com) and create a new blank spreadsheet
+2. Name it **OpMo League Registrations**
 
-### Step 3 — Configure the trigger
+### Step 2 — Open Apps Script
 
-1. Click the **When a HTTP request is received** trigger card to expand it
-2. In **Request Body JSON Schema**, paste the following:
+1. In the spreadsheet, click **Extensions → Apps Script**
+2. Delete any existing code in the editor
+3. Paste the following script:
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "season":      { "type": "string" },
-    "firstName":   { "type": "string" },
-    "lastName":    { "type": "string" },
-    "driverId":    { "type": "string" },
-    "carNum":      { "type": "string" },
-    "driverClass": { "type": "string" },
-    "carClass":    { "type": "string" },
-    "car":         { "type": "string" },
-    "timestamp":   { "type": "string" }
+```javascript
+function doPost(e) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getActiveSheet();
+
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow([
+      'Season','First Name','Last Name','Driver ID',
+      'Car Number','Driver Class','Car Class','Car','Submitted'
+    ]);
+    sheet.getRange(1,1,1,9)
+      .setFontWeight('bold')
+      .setBackground('#c4a87a')
+      .setFontColor('#0d1117');
+    sheet.setFrozenRows(1);
   }
+
+  const d = e.parameter;
+  sheet.appendRow([
+    d.season      || '',
+    d.firstName   || '',
+    d.lastName    || '',
+    d.driverId    || '',
+    d.carNum      || '',
+    d.driverClass || '',
+    d.carClass    || '',
+    d.car         || '',
+    new Date().toLocaleString('en-US'),
+  ]);
+
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'ok' }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 ```
 
-> **Note:** The HTTP URL won't appear until after you save for the first time in Step 5.
+4. Click **Save** (disk icon) and name the project **OpMo Registration**
 
----
+### Step 3 — Deploy as a Web App
 
-### Step 4 — Add the Excel action
+1. Click **Deploy → New deployment**
+2. Click the gear icon next to "Select type" → choose **Web app**
+3. Set:
+   - **Execute as**: Me
+   - **Who has access**: Anyone
+4. Click **Deploy**
+5. When prompted, click **Authorise access** → sign in with your Google account → click **Advanced → Go to OpMo Registration (unsafe)** → **Allow**
+6. **Copy the Web App URL** — it looks like:
+   `https://script.google.com/macros/s/ABC.../exec`
 
-1. Click **+ New step**
-2. Search for **Excel Online (Business)** → select **Add a row into a table**
-3. Fill in the fields:
-   - **Location**: OneDrive for Business *(or OneDrive if personal)*
-   - **Document Library**: OneDrive
-   - **File**: Browse to your **OpMo League Registrations.xlsx**
-   - **Table**: Registrations
-4. Map each column using dynamic content (click the field, then pick from the list):
-
-   | Column | Dynamic content value |
-   |--------|-----------------------|
-   | Season | `season` |
-   | First Name | `firstName` |
-   | Last Name | `lastName` |
-   | Driver ID | `driverId` |
-   | Car Number | `carNum` |
-   | Driver Class | `driverClass` |
-   | Car Class | `carClass` |
-   | Car | `car` |
-   | Submitted | `timestamp` |
-
----
-
-### Step 5 — Save and copy the URL
-
-1. Click **Save** (top right)
-2. Click back on the **When a HTTP request is received** trigger card
-3. Copy the **HTTP POST URL** — it looks like:
-   `https://prod-xx.westus.logic.azure.com:443/workflows/abc.../triggers/manual/paths/invoke?...`
-
----
-
-### Step 6 — Add the URL to the form
+### Step 4 — Add the URL to the form
 
 Open `index.html` and find this line near the top of the `<script>` block:
 
 ```javascript
-const POWER_AUTOMATE_URL = '';
+const APPS_SCRIPT_URL = '';
 ```
 
-Paste your URL:
+Paste your URL inside the quotes:
 
 ```javascript
-const POWER_AUTOMATE_URL = 'https://prod-xx.westus.logic.azure.com:443/workflows/...';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_ID_HERE/exec';
 ```
 
-Commit and push — every submission now writes a row to your Excel file automatically.
+Commit and push — every submission now writes a permanent row to your Google Sheet.
 
 ---
 
 ## Season management
 
-- In the **Admin Panel**, click **Change Season** to update the season label (e.g. *Season 14*)
+- In the **Admin Panel**, click **Change Season** to set the label (e.g. *Season 14*)
 - Or update the default in `index.html`: `return localStorage.getItem(SEASON_KEY) || 'Season 14';`
-- All seasons accumulate in the same Excel table — filter column A by season name to isolate a specific season
-- To start a new season just update the label — old entries are untouched
+- All seasons accumulate in the same sheet — filter column A to isolate a specific season
+- Old entries are never deleted or overwritten
 
-## Exporting
+## Exporting to Excel
 
-Open **OpMo League Registrations.xlsx** in OneDrive any time — it's already Excel. Download it, share it, or work in it directly.
+In Google Sheets go to **File → Download → Microsoft Excel (.xlsx)** — done.
