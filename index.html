@@ -363,8 +363,8 @@ tr:last-child td { border-bottom: none; }
       <strong>Backend setup required for multi-device data collection.</strong><br>
       Without a backend, only registrations submitted on <em>this device/browser</em> appear below.
       To collect all entries across all drivers, sign up free at
-      <a href="https://formspree.io" target="_blank" style="color:var(--accent)">formspree.io</a>,
-      create a form, and paste the endpoint URL as <code>FORMSPREE_URL</code> in this file.
+      <a href="https://web3forms.com" target="_blank" style="color:var(--accent)">web3forms.com</a>
+      and add your access key as <code>WEB3FORMS_KEY</code> in this file.
     </div>
 
     <div class="admin-table-wrap">
@@ -375,9 +375,8 @@ tr:last-child td { border-bottom: none; }
 </div>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-// Paste your Formspree endpoint URL here (https://formspree.io/f/xxxxxxxx).
-// Sign up free at formspree.io — leave blank to use local-only mode.
-const FORMSPREE_URL = 'https://formspree.io/f/xpqbkgvo';
+// Web3Forms access key — free at web3forms.com
+const WEB3FORMS_KEY = 'd8ded08a-3a20-48fc-9016-f5455bd20fea';
 
 const STORE_KEY    = 'opmo-registrations';
 const SEASON_KEY   = 'opmo-season';
@@ -470,15 +469,15 @@ function saveEntryLocal(entry) {
   localStorage.setItem(STORE_KEY, JSON.stringify(entries));
 }
 
-// ── Submit to Formspree ───────────────────────────────────────────────────────
+// ── Submit to Web3Forms ───────────────────────────────────────────────────────
 async function submitToFormspree(entry) {
-  if (!FORMSPREE_URL) return;
-  const res = await fetch(FORMSPREE_URL, {
+  if (!WEB3FORMS_KEY) return;
+  const res = await fetch('https://api.web3forms.com/submit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify(entry),
+    body: JSON.stringify({ access_key: WEB3FORMS_KEY, ...entry }),
   });
-  if (!res.ok) throw new Error('Formspree returned ' + res.status);
+  if (!res.ok) throw new Error('Web3Forms returned ' + res.status);
 }
 
 // ── Excel generation ──────────────────────────────────────────────────────────
@@ -589,7 +588,7 @@ function renderAdminTable() {
   const wrap = document.getElementById('admin-table-body');
 
   const notice = document.getElementById('setup-notice');
-  notice.style.display = FORMSPREE_URL ? 'none' : '';
+  notice.style.display = WEB3FORMS_KEY ? 'none' : '';
 
   if (!entries.length) {
     wrap.innerHTML = '<div class="empty-state">No registrations recorded on this device yet.</div>';
