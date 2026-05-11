@@ -329,12 +329,10 @@ tr:last-child td { border-bottom: none; }
       <div class="success-icon">🏁</div>
       <div class="success-title">Registration Submitted!</div>
       <div class="success-sub">
-        Your registration has been recorded for <strong id="success-season"></strong>.<br>
-        An Excel copy of your entry has been downloaded.<br><br>
+        Your registration has been recorded for <strong id="success-season"></strong>.<br><br>
         <span style="color:var(--accent)">Welcome to the Operation eMotorsport League.</span>
       </div>
       <button class="btn-secondary" onclick="resetForm()">Register Another Driver</button>
-      <button class="btn-secondary" onclick="downloadMine()">Re-download Excel</button>
     </div>
   </div>
 
@@ -529,8 +527,6 @@ document.getElementById('signup-form').addEventListener('submit', async e => {
 
   saveEntryLocal(entry);
   lastEntry = entry;
-
-  buildXlsx([entry], `OpMo_Registration_${entry.lastName}_${entry.firstName}.xlsx`);
 
   document.getElementById('signup-form').style.display = 'none';
   document.getElementById('success-card').classList.add('show');
