@@ -365,8 +365,8 @@ tr:last-child td { border-bottom: none; }
       <strong>Backend setup required for multi-device data collection.</strong><br>
       Without a backend, only registrations submitted on <em>this device/browser</em> appear below.
       To collect all entries across all drivers, follow the
-      <a href="SETUP.md" style="color:var(--accent)">Google Sheets setup guide</a>
-      and paste your Apps Script URL as <code>APPS_SCRIPT_URL</code> in this file.
+      <a href="SETUP.md" style="color:var(--accent)">Power Automate setup guide</a>
+      and paste your flow URL as <code>POWER_AUTOMATE_URL</code> in this file.
     </div>
 
     <div class="admin-table-wrap">
@@ -377,9 +377,9 @@ tr:last-child td { border-bottom: none; }
 </div>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-// Paste your Google Apps Script web app URL here after setup.
+// Paste your Power Automate HTTP trigger URL here after setup.
 // See SETUP.md for instructions. Leave blank to use local-only mode.
-const APPS_SCRIPT_URL = '';
+const POWER_AUTOMATE_URL = '';
 
 const STORE_KEY    = 'opmo-registrations';
 const SEASON_KEY   = 'opmo-season';
@@ -472,11 +472,11 @@ function saveEntryLocal(entry) {
   localStorage.setItem(STORE_KEY, JSON.stringify(entries));
 }
 
-// ── Submit to Google Sheets ───────────────────────────────────────────────────
-async function submitToSheets(entry) {
-  if (!APPS_SCRIPT_URL) return;
+// ── Submit to Power Automate → Excel ─────────────────────────────────────────
+async function submitToExcel(entry) {
+  if (!POWER_AUTOMATE_URL) return;
   const params = new URLSearchParams(entry);
-  await fetch(APPS_SCRIPT_URL, { method: 'POST', body: params });
+  await fetch(POWER_AUTOMATE_URL, { method: 'POST', mode: 'no-cors', body: params });
 }
 
 // ── Excel generation ──────────────────────────────────────────────────────────
@@ -517,9 +517,9 @@ document.getElementById('signup-form').addEventListener('submit', async e => {
   };
 
   try {
-    await submitToSheets(entry);
+    await submitToExcel(entry);
   } catch(err) {
-    console.warn('Sheets submission failed:', err);
+    console.warn('Power Automate submission failed:', err);
     document.getElementById('submit-error').classList.add('show');
   }
 
@@ -589,7 +589,7 @@ function renderAdminTable() {
   const wrap = document.getElementById('admin-table-body');
 
   const notice = document.getElementById('setup-notice');
-  notice.style.display = APPS_SCRIPT_URL ? 'none' : '';
+  notice.style.display = POWER_AUTOMATE_URL ? 'none' : '';
 
   if (!entries.length) {
     wrap.innerHTML = '<div class="empty-state">No registrations recorded on this device yet.</div>';
