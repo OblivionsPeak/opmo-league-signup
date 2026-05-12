@@ -294,6 +294,12 @@ tr:last-child td { border-bottom: none; }
         </div>
       </div>
 
+      <div class="form-group">
+        <label for="team-name">Team Name</label>
+        <input type="text" id="team-name" placeholder="e.g. Apex Racing" autocomplete="organization">
+        <div class="field-error" id="err-team-name">Required</div>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
           <label for="driver-id">iRacing Driver ID</label>
@@ -537,7 +543,7 @@ async function checkCarNum() {
 // ── Validation ────────────────────────────────────────────────────────────────
 function validate() {
   let ok = true;
-  [['first-name','err-first'],['last-name','err-last'],['driver-id','err-driver-id']].forEach(([id,eid]) => {
+  [['first-name','err-first'],['last-name','err-last'],['team-name','err-team-name'],['driver-id','err-driver-id']].forEach(([id,eid]) => {
     const el = document.getElementById(id);
     if (!el.value.trim()) { el.classList.add('invalid'); document.getElementById(eid).classList.add('show'); ok = false; }
     else { el.classList.remove('invalid'); document.getElementById(eid).classList.remove('show'); }
@@ -580,14 +586,14 @@ async function submitToSheets(entry) {
 
 // ── Excel generation ──────────────────────────────────────────────────────────
 function buildXlsx(rows, filename) {
-  const headers = ['Season','First Name','Last Name','Driver ID','Car Number','Driver Class','Car Class','Car','Submitted'];
+  const headers = ['Season','First Name','Last Name','Team Name','Driver ID','Car Number','Driver Class','Car Class','Car','Submitted'];
   const data = [headers, ...rows.map(r => [
-    r.season, r.firstName, r.lastName, r.driverId, r.carNum,
-    r.driverClass, r.carClass, r.car,
+    r.season, r.firstName, r.lastName, r.teamName || '',
+    r.driverId, r.carNum, r.driverClass, r.carClass, r.car,
     new Date(r.timestamp).toLocaleString('en-US')
   ])];
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [16,12,12,12,10,14,10,28,18].map(w => ({wch:w}));
+  ws['!cols'] = [16,12,12,18,12,10,14,10,28,18].map(w => ({wch:w}));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Registrations');
   XLSX.writeFile(wb, filename);
@@ -618,6 +624,7 @@ document.getElementById('signup-form').addEventListener('submit', async e => {
     season:      getSeason(),
     firstName:   document.getElementById('first-name').value.trim(),
     lastName:    document.getElementById('last-name').value.trim(),
+    teamName:    document.getElementById('team-name').value.trim(),
     driverId:    document.getElementById('driver-id').value.trim(),
     carNum:      document.getElementById('car-num').value.trim(),
     driverClass: selectedClass,
@@ -742,12 +749,12 @@ function renderAdminTable() {
 
   wrap.innerHTML = `<table>
     <thead><tr>
-      <th>#</th><th>Season</th><th>First</th><th>Last</th><th>Driver ID</th>
+      <th>#</th><th>Season</th><th>First</th><th>Last</th><th>Team</th><th>Driver ID</th>
       <th>Car #</th><th>Class</th><th>Car Class</th><th>Car</th><th>Submitted</th>
     </tr></thead>
     <tbody>${entries.map((r,i)=>`<tr>
       <td>${i+1}</td><td>${r.season||'—'}</td>
-      <td>${r.firstName}</td><td>${r.lastName}</td>
+      <td>${r.firstName}</td><td>${r.lastName}</td><td>${r.teamName||'—'}</td>
       <td>${r.driverId}</td><td>${r.carNum}</td>
       <td>${r.driverClass}</td><td>${r.carClass}</td><td>${r.car}</td>
       <td>${new Date(r.timestamp).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</td>
@@ -773,7 +780,7 @@ function clearAll() {
 document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitPassword(); });
 
 // ── Input live-clear invalid state ───────────────────────────────────────────
-['first-name','last-name','driver-id'].forEach(id => {
+['first-name','last-name','team-name','driver-id'].forEach(id => {
   document.getElementById(id).addEventListener('input', function() { this.classList.remove('invalid'); });
 });
 document.getElementById('car-num').addEventListener('input', function() {
