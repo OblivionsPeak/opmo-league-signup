@@ -25,7 +25,7 @@ function doPost(e) {
   var sheet = ss.getActiveSheet();
 
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['Season','First Name','Last Name','Team Name','Driver ID','Car Number','Driver Class','Car Class','Car','Submitted']);
+    sheet.appendRow(['Season','First Name','Last Name','Driver ID','Team Name','Car Number','Driver Class','Car Class','Car','Submitted']);
     sheet.getRange(1,1,1,10).setFontWeight('bold').setBackground('#c4a87a').setFontColor('#0d1117');
     sheet.setFrozenRows(1);
   }
@@ -35,8 +35,8 @@ function doPost(e) {
     d.season      || '',
     d.firstName   || '',
     d.lastName    || '',
-    d.teamName    || '',
     d.driverId    || '',
+    d.teamName    || '',
     d.carNum      || '',
     d.driverClass || '',
     d.carClass    || '',
@@ -60,7 +60,7 @@ function doGet(e) {
     var data = sheet.getRange(2, 1, lastRow - 1, 6).getValues();
     data.forEach(function(row) {
       if (!season || String(row[0]).trim() === season) {
-        var num = String(row[5]).trim();
+        var num = String(row[5]).trim(); // column F = Car Number
         if (num) carNums.push(num);
       }
     });
