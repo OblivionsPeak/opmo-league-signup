@@ -285,6 +285,11 @@ tr:last-child td { border-bottom: none; }
       </div>
 
       <div class="form-group">
+        <label for="phonetic">Phonetic Pronunciation <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <input type="text" id="phonetic" placeholder="e.g. AN-der-son" autocomplete="off">
+      </div>
+
+      <div class="form-group">
         <label for="team-name">Team Name</label>
         <input type="text" id="team-name" placeholder="e.g. Apex Racing" autocomplete="organization">
         <div class="field-error" id="err-team-name">Required</div>
@@ -564,10 +569,10 @@ async function submitToSheets(entry) {
 
 // ── Excel generation ──────────────────────────────────────────────────────────
 function buildXlsx(rows, filename) {
-  const headers = ['Season','First Name','Last Name','Team Name','Driver ID','Car Number','Driver Class','Car Class','Car','Submitted'];
+  const headers = ['Season','First Name','Last Name','Phonetic','Team Name','Driver ID','Car Number','Driver Class','Car Class','Car','Submitted'];
   const data = [headers, ...rows.map(r => [
-    r.season, r.firstName, r.lastName, r.teamName || '',
-    r.driverId, r.carNum, r.driverClass, r.carClass, r.car,
+    r.season, r.firstName, r.lastName, r.phonetic || '',
+    r.teamName || '', r.driverId, r.carNum, r.driverClass, r.carClass, r.car,
     new Date(r.timestamp).toLocaleString('en-US')
   ])];
   const ws = XLSX.utils.aoa_to_sheet(data);
@@ -602,6 +607,7 @@ document.getElementById('signup-form').addEventListener('submit', async e => {
     season:      getSeason(),
     firstName:   document.getElementById('first-name').value.trim(),
     lastName:    document.getElementById('last-name').value.trim(),
+    phonetic:    document.getElementById('phonetic').value.trim(),
     teamName:    document.getElementById('team-name').value.trim(),
     driverId:    document.getElementById('driver-id').value.trim(),
     carNum:      document.getElementById('car-num').value.trim(),
@@ -726,12 +732,12 @@ function renderAdminTable() {
 
   wrap.innerHTML = `<table>
     <thead><tr>
-      <th>#</th><th>Season</th><th>First</th><th>Last</th><th>Team</th><th>Driver ID</th>
+      <th>#</th><th>Season</th><th>First</th><th>Last</th><th>Phonetic</th><th>Team</th><th>Driver ID</th>
       <th>Car #</th><th>Class</th><th>Car Class</th><th>Car</th><th>Submitted</th>
     </tr></thead>
     <tbody>${entries.map((r,i)=>`<tr>
       <td>${i+1}</td><td>${r.season||'—'}</td>
-      <td>${r.firstName}</td><td>${r.lastName}</td><td>${r.teamName||'—'}</td>
+      <td>${r.firstName}</td><td>${r.lastName}</td><td>${r.phonetic||'—'}</td><td>${r.teamName||'—'}</td>
       <td>${r.driverId}</td><td>${r.carNum}</td>
       <td>${r.driverClass}</td><td>${r.carClass}</td><td>${r.car}</td>
       <td>${new Date(r.timestamp).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</td>
